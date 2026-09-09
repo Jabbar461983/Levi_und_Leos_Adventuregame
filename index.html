@@ -23,11 +23,10 @@
 
         #gameContainer {
             position: relative;
-            width: 800px;
-            height: 600px;
+            width: 100vw;
+            height: 100vh;
             background: #000;
-            border: 3px solid #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            overflow: hidden;
         }
 
         canvas {
@@ -47,6 +46,66 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+        }
+
+        #pauseMenu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #ffd700;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 2000;
+            pointer-events: auto;
+            display: none;
+        }
+
+        .pause-title {
+            font-size: 48px;
+            color: #ffd700;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .pause-button {
+            width: 200px;
+            padding: 15px;
+            margin: 10px auto;
+            font-size: 18px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border: 2px solid #ff8c00;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .pause-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+        }
+
+        #menuBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            pointer-events: auto;
+            background: linear-gradient(135deg, #ff6b6b, #ff8c8c);
+            border: 2px solid #ff8c00;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        #menuBtn:hover {
+            transform: scale(1.05);
         }
 
         .ui-panel {
@@ -210,7 +269,7 @@
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
 
         <div id="menuContainer">
             <div class="menu-title">Link's Quest</div>
@@ -225,6 +284,14 @@
             <div class="shop-back">
                 <button class="back-button" onclick="closeShop()">Zurück zum Menü</button>
             </div>
+        </div>
+
+        <button id="menuBtn" onclick="togglePauseMenu()">☰ Menü</button>
+
+        <div id="pauseMenu">
+            <div class="pause-title">⏸ PAUSIERT</div>
+            <button class="pause-button" onclick="resumeGame()">Weiterspielen</button>
+            <button class="pause-button" onclick="goToMainMenu()">Zum Menü</button>
         </div>
 
         <div id="ui" class="hidden">
@@ -244,6 +311,21 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const TILE_SIZE = 40;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        window.keys = {};
+        document.addEventListener('keydown', e => {
+            window.keys[e.key.toLowerCase()] = true;
+        });
+        document.addEventListener('keyup', e => {
+            window.keys[e.key.toLowerCase()] = false;
+        });
 
         class Game {
             constructor() {
@@ -498,19 +580,13 @@
             }
 
             update(width, height) {
-                const keys = {};
-                document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
-                document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-
-                window.keys = keys;
-
                 this.dx = 0;
                 this.dy = 0;
 
-                if (window.keys['w'] || window.keys['arrowup']) this.dy = -this.speed;
-                if (window.keys['s'] || window.keys['arrowdown']) this.dy = this.speed;
-                if (window.keys['a'] || window.keys['arrowleft']) this.dx = -this.speed;
-                if (window.keys['d'] || window.keys['arrowright']) this.dx = this.speed;
+                if (window.keys['arrowup']) this.dy = -this.speed;
+                if (window.keys['arrowdown']) this.dy = this.speed;
+                if (window.keys['arrowleft']) this.dx = -this.speed;
+                if (window.keys['arrowright']) this.dx = this.speed;
 
                 this.x += this.dx;
                 this.y += this.dy;
@@ -772,58 +848,73 @@
         }
 
         document.addEventListener('mousemove', e => {
-            const rect = canvas.getBoundingClientRect();
             window.mousePos = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: e.clientX,
+                y: e.clientY
             };
         });
 
-        document.addEventListener('click', e => {
+        function togglePauseMenu() {
             if (!game || game.gameState !== 'playing') return;
+            game.isPaused = !game.isPaused;
+            document.getElementById('pauseMenu').style.display = game.isPaused ? 'block' : 'none';
+        }
 
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
+        function resumeGame() {
+            if (game) {
+                game.isPaused = false;
+                document.getElementById('pauseMenu').style.display = 'none';
+            }
+        }
 
-            const dist = Math.hypot(clickX - game.player.x, clickY - game.player.y);
+        function goToMainMenu() {
+            if (game) {
+                game.saveProgress();
+                game.gameState = 'menu';
+                document.getElementById('ui').classList.add('hidden');
+                document.getElementById('pauseMenu').style.display = 'none';
+                document.getElementById('menuContainer').classList.remove('hidden');
+            }
+        }
+
+        function performAttack() {
+            if (!game || game.gameState !== 'playing' || game.isPaused) return;
+
+            const angle = game.player.angle;
             const attackRange = 80;
 
-            if (dist < attackRange) {
-                const angle = Math.atan2(clickY - game.player.y, clickX - game.player.x);
+            game.enemies = game.enemies.filter(enemy => {
+                const edist = Math.hypot(enemy.x - game.player.x, enemy.y - game.player.y);
+                const angleDiff = Math.abs(angle - Math.atan2(enemy.y - game.player.y, enemy.x - game.player.x));
 
-                game.enemies = game.enemies.filter(enemy => {
-                    const edist = Math.hypot(enemy.x - game.player.x, enemy.y - game.player.y);
-                    const angleDiff = Math.abs(angle - Math.atan2(enemy.y - game.player.y, enemy.x - game.player.x));
-
-                    if (edist < attackRange && angleDiff < Math.PI / 4) {
-                        enemy.takeDamage(25);
-                        for (let i = 0; i < 5; i++) {
-                            game.particles.push(new Particle(enemy.x, enemy.y, enemy.color));
-                        }
-                        return enemy.hp > 0;
+                if (edist < attackRange && angleDiff < Math.PI / 4) {
+                    enemy.takeDamage(25);
+                    for (let i = 0; i < 5; i++) {
+                        game.particles.push(new Particle(enemy.x, enemy.y, enemy.color));
                     }
-                    return true;
-                });
+                    return enemy.hp > 0;
+                }
+                return true;
+            });
 
-                if (game.boss && Math.hypot(game.boss.x - game.player.x, game.boss.y - game.player.y) < attackRange) {
-                    const bdist = Math.hypot(game.boss.x - game.player.x, game.boss.y - game.player.y);
-                    const bangle = Math.atan2(game.boss.y - game.player.y, game.boss.x - game.player.x);
-                    const angleDiff = Math.abs(angle - bangle);
+            if (game.boss && Math.hypot(game.boss.x - game.player.x, game.boss.y - game.player.y) < attackRange) {
+                const bdist = Math.hypot(game.boss.x - game.player.x, game.boss.y - game.player.y);
+                const bangle = Math.atan2(game.boss.y - game.player.y, game.boss.x - game.player.x);
+                const angleDiff = Math.abs(angle - bangle);
 
-                    if (bdist < attackRange && angleDiff < Math.PI / 3) {
-                        game.boss.takeDamage(50);
-                        for (let i = 0; i < 10; i++) {
-                            game.particles.push(new Particle(game.boss.x, game.boss.y, game.boss.theme.color));
-                        }
+                if (bdist < attackRange && angleDiff < Math.PI / 3) {
+                    game.boss.takeDamage(50);
+                    for (let i = 0; i < 10; i++) {
+                        game.particles.push(new Particle(game.boss.x, game.boss.y, game.boss.theme.color));
                     }
                 }
             }
-        });
+        }
 
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape' && game && game.gameState === 'playing') {
-                game.isPaused = !game.isPaused;
+            if (e.key === ' ') {
+                e.preventDefault();
+                performAttack();
             }
         });
 
