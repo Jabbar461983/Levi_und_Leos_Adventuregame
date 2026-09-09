@@ -477,7 +477,22 @@
                 if (this.gameState !== 'playing' || this.isPaused) return;
 
                 this.frameCount++;
-                this.player.update(this.width, this.height);
+                this.player.update();
+                // old player position update
+                const keys = window.keys || {};
+                this.player.dx = 0;
+                this.player.dy = 0;
+                if (keys['arrowup']) this.player.dy = -this.player.speed;
+                if (keys['arrowdown']) this.player.dy = this.player.speed;
+                if (keys['arrowleft']) this.player.dx = -this.player.speed;
+                if (keys['arrowright']) this.player.dx = this.player.speed;
+                this.player.x += this.player.dx;
+                this.player.y += this.player.dy;
+                this.player.x = Math.max(this.player.width / 2, Math.min(this.width - this.player.width / 2, this.player.x));
+                this.player.y = Math.max(this.player.height / 2, Math.min(this.height - this.player.height / 2, this.player.y));
+                if (window.mousePos) {
+                    this.player.angle = Math.atan2(window.mousePos.y - this.player.y, window.mousePos.x - this.player.x);
+                }
 
                 this.enemies = this.enemies.filter(e => {
                     e.update(this.player, this.width, this.height);
@@ -650,37 +665,21 @@
                 this.dy = 0;
                 this.angle = 0;
                 this.skinIndex = skinIndex;
-                this.image = null;
+                this.sprite = null;
                 this.loadImage();
             }
 
             loadImage() {
                 const skinNames = ['classic', 'red', 'blue', 'dark', 'gold', 'crystal'];
                 const imagePath = `assets/sprites/link/${skinNames[this.skinIndex]}.png`;
-                const img = new Image();
-                img.src = imagePath;
-                img.onload = () => {
-                    this.image = img;
-                };
+                // Versucht zuerst animierte Version (z.B. classic-animation.png)
+                this.sprite = new SpriteSheet(imagePath, 100, 100, 1, 'horizontal');
             }
 
-            update(width, height) {
-                this.dx = 0;
-                this.dy = 0;
 
-                if (window.keys['arrowup']) this.dy = -this.speed;
-                if (window.keys['arrowdown']) this.dy = this.speed;
-                if (window.keys['arrowleft']) this.dx = -this.speed;
-                if (window.keys['arrowright']) this.dx = this.speed;
-
-                this.x += this.dx;
-                this.y += this.dy;
-
-                this.x = Math.max(this.width / 2, Math.min(width - this.width / 2, this.x));
-                this.y = Math.max(this.height / 2, Math.min(height - this.height / 2, this.y));
-
-                if (window.mousePos) {
-                    this.angle = Math.atan2(window.mousePos.y - this.y, window.mousePos.x - this.x);
+            update() {
+                if (this.sprite) {
+                    this.sprite.update();
                 }
             }
 
@@ -689,8 +688,8 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.angle);
 
-                if (this.image) {
-                    ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+                if (this.sprite && this.sprite.image) {
+                    this.sprite.draw(ctx, 0, 0, this.width, this.height);
                 } else {
                     ctx.fillStyle = color;
                     ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
@@ -729,18 +728,15 @@
                 this.color = `hsl(${Math.random() * 60 + 20}, 80%, 50%)`;
                 this.attackCooldown = 0;
                 this.themeIndex = Math.floor((level - 1) / 5);
-                this.image = null;
+                this.sprite = null;
                 this.loadImage();
             }
 
             loadImage() {
                 const themeNames = ['wald', 'wasser', 'feuer', 'gift', 'blitz', 'gebirge', 'leere'];
                 const imagePath = `assets/sprites/enemies/${themeNames[this.themeIndex]}.png`;
-                const img = new Image();
-                img.src = imagePath;
-                img.onload = () => {
-                    this.image = img;
-                };
+                // Standardmäßig 4 Frames horizontal, aber wird erkannt wenn andere Format
+                this.sprite = new SpriteSheet(imagePath, 100, 100, 4, 'horizontal');
             }
 
             update(player, width, height) {
@@ -751,11 +747,15 @@
                 this.y = Math.max(0, Math.min(height, this.y));
 
                 this.attackCooldown--;
+
+                if (this.sprite) {
+                    this.sprite.update();
+                }
             }
 
             draw(ctx) {
-                if (this.image) {
-                    ctx.drawImage(this.image, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                if (this.sprite && this.sprite.image) {
+                    this.sprite.draw(ctx, this.x, this.y, this.width, this.height);
                 } else {
                     ctx.fillStyle = this.color;
                     ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
@@ -1057,6 +1057,66 @@
                 performAttack();
             }
         });
+
+        class SpriteSheet {
+            constructor(imagePath, frameWidth = 100, frameHeight = 100, frameCount = 1, frameDirection = 'horizontal') {
+                this.imagePath = imagePath;
+                this.frameWidth = frameWidth;
+                this.frameHeight = frameHeight;
+                this.frameCount = frameCount;
+                this.frameDirection = frameDirection; // 'horizontal', 'vertical', 'grid'
+                this.image = null;
+                this.currentFrame = 0;
+                this.animationCounter = 0;
+                this.animationSpeed = 8; // frames per change
+                this.isAnimating = true;
+                this.load();
+            }
+
+            load() {
+                const img = new Image();
+                img.src = this.imagePath;
+                img.onload = () => {
+                    this.image = img;
+                };
+                img.onerror = () => {
+                    console.warn(`Could not load sprite: ${this.imagePath}`);
+                };
+            }
+
+            update() {
+                if (!this.isAnimating) return;
+                this.animationCounter++;
+                if (this.animationCounter >= this.animationSpeed) {
+                    this.animationCounter = 0;
+                    this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+                }
+            }
+
+            draw(ctx, x, y, width, height) {
+                if (!this.image) return;
+
+                let srcX = 0, srcY = 0;
+
+                if (this.frameDirection === 'horizontal') {
+                    srcX = this.currentFrame * this.frameWidth;
+                    srcY = 0;
+                } else if (this.frameDirection === 'vertical') {
+                    srcX = 0;
+                    srcY = this.currentFrame * this.frameHeight;
+                } else if (this.frameDirection === 'grid') {
+                    const cols = Math.floor(this.image.width / this.frameWidth);
+                    srcX = (this.currentFrame % cols) * this.frameWidth;
+                    srcY = Math.floor(this.currentFrame / cols) * this.frameHeight;
+                }
+
+                ctx.drawImage(
+                    this.image,
+                    srcX, srcY, this.frameWidth, this.frameHeight,
+                    x - width / 2, y - height / 2, width, height
+                );
+            }
+        }
 
         window.addEventListener('load', () => {
             game = new Game();
