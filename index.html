@@ -22,7 +22,9 @@
         }
 
         #gameContainer {
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100vw;
             height: 100vh;
             background: #000;
@@ -190,42 +192,46 @@
         }
 
         #menuContainer {
-            position: absolute;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            gap: 20px;
+            gap: 30px;
         }
 
         .menu-title {
-            font-size: 48px;
+            font-size: 60px;
             font-weight: bold;
             color: #ffd700;
-            text-shadow: 2px 2px 4px #000;
-            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px #000;
+            margin-bottom: 40px;
+            text-align: center;
         }
 
         .menu-button {
-            width: 300px;
-            padding: 15px;
-            font-size: 20px;
+            width: 350px;
+            padding: 20px;
+            font-size: 24px;
             background: linear-gradient(135deg, #ffd700, #ffed4e);
-            border: 2px solid #ff8c00;
-            border-radius: 5px;
+            border: 3px solid #ff8c00;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s;
             color: #000;
             font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
         }
 
         .menu-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            transform: scale(1.08);
+            box-shadow: 0 0 25px rgba(255, 215, 0, 1);
         }
 
         .menu-button:active {
@@ -234,11 +240,13 @@
 
         #shopContainer {
             display: none;
-            position: absolute;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 999;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            z-index: 1002;
             overflow-y: auto;
             padding: 20px;
         }
