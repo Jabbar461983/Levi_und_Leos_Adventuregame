@@ -733,13 +733,15 @@
             }
 
             loadImage() {
-                const themeNames = ['wald', 'wasser', 'feuer', 'gift', 'blitz', 'gebirge', 'leere'];
-                const themeName = themeNames[this.themeIndex];
-                const imagePath = `assets/sprites/enemies/${themeName}.png`;
+                // Nutze ein generisches Enemy-Sprite für alle Welten
+                const imagePath = 'assets/sprites/enemies/enemy.png';
+                const config = SPRITE_CONFIG.enemy;
 
-                // Nutze die Sprite-Konfiguration für diesen Theme
-                const config = SPRITE_CONFIG[themeName] || { frameCount: 4, direction: 'horizontal', speed: 8 };
-                this.sprite = new SpriteSheet(imagePath, 100, 100, config.frameCount, config.direction);
+                // Hole die Farbe für diesen Theme
+                const themeColor = THEME_COLORS[this.themeIndex];
+                const colorFilter = themeColor ? themeColor.filter : '';
+
+                this.sprite = new SpriteSheet(imagePath, 100, 100, config.frameCount, config.direction, colorFilter);
                 this.sprite.animationSpeed = config.speed;
             }
 
@@ -877,15 +879,20 @@
             }
         }
 
-        // Sprite Sheet Konfiguration für alle Monster
+        // Sprite Sheet Konfiguration
         const SPRITE_CONFIG = {
-            wald: { frameCount: 4, direction: 'horizontal', speed: 8 },
-            wasser: { frameCount: 4, direction: 'horizontal', speed: 8 },
-            feuer: { frameCount: 36, direction: 'grid', speed: 8 }, // 6x6 Grid
-            gift: { frameCount: 4, direction: 'horizontal', speed: 8 },
-            blitz: { frameCount: 4, direction: 'horizontal', speed: 8 },
-            gebirge: { frameCount: 4, direction: 'horizontal', speed: 8 },
-            leere: { frameCount: 4, direction: 'horizontal', speed: 8 }
+            enemy: { frameCount: 36, direction: 'grid', speed: 8 } // 6x6 Grid für alle Monster
+        };
+
+        // Farben pro Welt (zum Einfärben des Monsters)
+        const THEME_COLORS = {
+            0: { name: 'Wald', filter: 'hue-rotate(120deg) saturate(1.2)' },      // Grün
+            1: { name: 'Wasser', filter: 'hue-rotate(200deg) saturate(1.2)' },    // Blau
+            2: { name: 'Feuer', filter: 'hue-rotate(0deg) saturate(1.5)' },       // Rot
+            3: { name: 'Gift', filter: 'hue-rotate(90deg) saturate(1.3)' },       // Grün-Gelb
+            4: { name: 'Blitz', filter: 'hue-rotate(60deg) saturate(1.4)' },      // Gelb
+            5: { name: 'Gebirge', filter: 'grayscale(0.5) brightness(0.9)' },     // Grau
+            6: { name: 'Leere', filter: 'hue-rotate(280deg) saturate(1.2)' }      // Lila
         };
 
         let game = null;
@@ -1074,12 +1081,13 @@
         });
 
         class SpriteSheet {
-            constructor(imagePath, frameWidth = 100, frameHeight = 100, frameCount = 1, frameDirection = 'horizontal') {
+            constructor(imagePath, frameWidth = 100, frameHeight = 100, frameCount = 1, frameDirection = 'horizontal', colorFilter = '') {
                 this.imagePath = imagePath;
                 this.frameWidth = frameWidth;
                 this.frameHeight = frameHeight;
                 this.frameCount = frameCount;
                 this.frameDirection = frameDirection; // 'horizontal', 'vertical', 'grid'
+                this.colorFilter = colorFilter; // CSS Filter für Farbänderung
                 this.image = null;
                 this.currentFrame = 0;
                 this.animationCounter = 0;
@@ -1125,11 +1133,17 @@
                     srcY = Math.floor(this.currentFrame / cols) * this.frameHeight;
                 }
 
+                ctx.save();
+                if (this.colorFilter) {
+                    ctx.filter = this.colorFilter;
+                }
+
                 ctx.drawImage(
                     this.image,
                     srcX, srcY, this.frameWidth, this.frameHeight,
                     x - width / 2, y - height / 2, width, height
                 );
+                ctx.restore();
             }
         }
 
