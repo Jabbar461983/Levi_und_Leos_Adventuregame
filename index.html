@@ -859,16 +859,15 @@
         }
 
         function gameLoop() {
-            if (!game || game.gameState === 'menu') return;
-
-            game.update();
-            game.draw();
-
-            updateUI();
+            if (!game) return;
 
             if (game.gameState === 'playing') {
+                game.update();
+                game.draw();
+                updateUI();
                 requestAnimationFrame(gameLoop);
             } else if (game.gameState === 'levelcomplete') {
+                game.draw();
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, game.width, game.height);
                 ctx.fillStyle = '#00ff00';
@@ -883,6 +882,7 @@
                     document.getElementById('levelStartScreen').style.display = 'flex';
                 }, 2000);
             } else if (game.gameState === 'gameover') {
+                game.draw();
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, game.width, game.height);
                 ctx.fillStyle = '#ff0000';
@@ -897,10 +897,12 @@
                 setTimeout(() => {
                     game.saveProgress();
                     document.getElementById('ui').classList.add('hidden');
+                    document.getElementById('levelStartScreen').style.display = 'none';
                     document.getElementById('menuContainer').classList.remove('hidden');
                     game.gameState = 'menu';
                 }, 3000);
             } else if (game.gameState === 'won') {
+                game.draw();
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, game.width, game.height);
                 ctx.fillStyle = '#00ff00';
@@ -914,6 +916,7 @@
                 setTimeout(() => {
                     game.saveProgress();
                     document.getElementById('ui').classList.add('hidden');
+                    document.getElementById('levelStartScreen').style.display = 'none';
                     document.getElementById('menuContainer').classList.remove('hidden');
                     game.gameState = 'menu';
                 }, 3000);
