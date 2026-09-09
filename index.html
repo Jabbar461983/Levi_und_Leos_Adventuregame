@@ -641,8 +641,8 @@
             constructor(x, y, skinIndex) {
                 this.x = x;
                 this.y = y;
-                this.width = 30;
-                this.height = 30;
+                this.width = 40;
+                this.height = 40;
                 this.hp = 100;
                 this.maxHp = 100;
                 this.speed = 5;
@@ -650,6 +650,18 @@
                 this.dy = 0;
                 this.angle = 0;
                 this.skinIndex = skinIndex;
+                this.image = null;
+                this.loadImage();
+            }
+
+            loadImage() {
+                const skinNames = ['classic', 'red', 'blue', 'dark', 'gold', 'crystal'];
+                const imagePath = `assets/sprites/link/${skinNames[this.skinIndex]}.png`;
+                const img = new Image();
+                img.src = imagePath;
+                img.onload = () => {
+                    this.image = img;
+                };
             }
 
             update(width, height) {
@@ -673,21 +685,24 @@
             }
 
             draw(ctx, color) {
-                ctx.fillStyle = color;
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.angle);
 
-                ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-
-                ctx.fillStyle = '#ffff00';
-                ctx.fillRect(this.width / 2 - 5, -2, 8, 4);
+                if (this.image) {
+                    ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+                } else {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+                    ctx.fillStyle = '#ffff00';
+                    ctx.fillRect(this.width / 2 - 5, -2, 8, 4);
+                }
 
                 ctx.restore();
 
                 ctx.fillStyle = '#00ff00';
                 ctx.beginPath();
-                ctx.arc(this.x, this.y - 15, 3, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y - 20, 3, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -704,8 +719,8 @@
             constructor(x, y, level) {
                 this.x = x;
                 this.y = y;
-                this.width = 24;
-                this.height = 24;
+                this.width = 40;
+                this.height = 40;
                 this.hp = 20 + level * 5;
                 this.maxHp = this.hp;
                 this.speed = 2 + level * 0.5;
@@ -713,6 +728,19 @@
                 this.dy = 0;
                 this.color = `hsl(${Math.random() * 60 + 20}, 80%, 50%)`;
                 this.attackCooldown = 0;
+                this.themeIndex = Math.floor((level - 1) / 5);
+                this.image = null;
+                this.loadImage();
+            }
+
+            loadImage() {
+                const themeNames = ['wald', 'wasser', 'feuer', 'gift', 'blitz', 'gebirge', 'leere'];
+                const imagePath = `assets/sprites/enemies/${themeNames[this.themeIndex]}.png`;
+                const img = new Image();
+                img.src = imagePath;
+                img.onload = () => {
+                    this.image = img;
+                };
             }
 
             update(player, width, height) {
@@ -726,8 +754,12 @@
             }
 
             draw(ctx) {
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                if (this.image) {
+                    ctx.drawImage(this.image, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                } else {
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                }
 
                 ctx.fillStyle = '#ff0000';
                 const healthWidth = (this.hp / this.maxHp) * this.width;
