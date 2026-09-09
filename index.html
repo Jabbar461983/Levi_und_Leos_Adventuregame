@@ -110,15 +110,21 @@
 
         #levelStartScreen {
             position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.95);
-            display: flex;
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1001;
             gap: 30px;
+        }
+
+        #levelStartScreen.show {
+            display: flex !important;
         }
 
         .level-start-theme {
@@ -831,7 +837,7 @@
 
         function startGame() {
             document.getElementById('menuContainer').classList.add('hidden');
-            document.getElementById('levelStartScreen').style.display = 'flex';
+            document.getElementById('levelStartScreen').classList.add('show');
             game = new Game();
             updateLevelStartScreen();
         }
@@ -843,7 +849,7 @@
         }
 
         function startLevelGame() {
-            document.getElementById('levelStartScreen').style.display = 'none';
+            document.getElementById('levelStartScreen').classList.remove('show');
             document.getElementById('ui').classList.remove('hidden');
             game.gameState = 'playing';
             gameLoop();
@@ -883,7 +889,7 @@
                     game.init();
                     updateLevelStartScreen();
                     document.getElementById('ui').classList.add('hidden');
-                    document.getElementById('levelStartScreen').style.display = 'flex';
+                    document.getElementById('levelStartScreen').classList.add('show');
                 }, 2000);
             } else if (game.gameState === 'gameover') {
                 game.draw();
@@ -901,7 +907,7 @@
                 setTimeout(() => {
                     game.saveProgress();
                     document.getElementById('ui').classList.add('hidden');
-                    document.getElementById('levelStartScreen').style.display = 'none';
+                    document.getElementById('levelStartScreen').classList.remove('show');
                     document.getElementById('menuContainer').classList.remove('hidden');
                     game.gameState = 'menu';
                 }, 3000);
@@ -920,7 +926,7 @@
                 setTimeout(() => {
                     game.saveProgress();
                     document.getElementById('ui').classList.add('hidden');
-                    document.getElementById('levelStartScreen').style.display = 'none';
+                    document.getElementById('levelStartScreen').classList.remove('show');
                     document.getElementById('menuContainer').classList.remove('hidden');
                     game.gameState = 'menu';
                 }, 3000);
@@ -945,7 +951,12 @@
         function togglePauseMenu() {
             if (!game || game.gameState !== 'playing') return;
             game.isPaused = !game.isPaused;
-            document.getElementById('pauseMenu').style.display = game.isPaused ? 'block' : 'none';
+            const pauseMenu = document.getElementById('pauseMenu');
+            if (game.isPaused) {
+                pauseMenu.style.display = 'block';
+            } else {
+                pauseMenu.style.display = 'none';
+            }
         }
 
         function resumeGame() {
@@ -960,6 +971,7 @@
                 game.saveProgress();
                 game.gameState = 'menu';
                 document.getElementById('ui').classList.add('hidden');
+                document.getElementById('levelStartScreen').classList.remove('show');
                 document.getElementById('pauseMenu').style.display = 'none';
                 document.getElementById('menuContainer').classList.remove('hidden');
             }
