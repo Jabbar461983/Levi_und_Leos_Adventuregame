@@ -734,9 +734,13 @@
 
             loadImage() {
                 const themeNames = ['wald', 'wasser', 'feuer', 'gift', 'blitz', 'gebirge', 'leere'];
-                const imagePath = `assets/sprites/enemies/${themeNames[this.themeIndex]}.png`;
-                // Standardmäßig 4 Frames horizontal, aber wird erkannt wenn andere Format
-                this.sprite = new SpriteSheet(imagePath, 100, 100, 4, 'horizontal');
+                const themeName = themeNames[this.themeIndex];
+                const imagePath = `assets/sprites/enemies/${themeName}.png`;
+
+                // Nutze die Sprite-Konfiguration für diesen Theme
+                const config = SPRITE_CONFIG[themeName] || { frameCount: 4, direction: 'horizontal', speed: 8 };
+                this.sprite = new SpriteSheet(imagePath, 100, 100, config.frameCount, config.direction);
+                this.sprite.animationSpeed = config.speed;
             }
 
             update(player, width, height) {
@@ -872,6 +876,17 @@
                 ctx.globalAlpha = 1;
             }
         }
+
+        // Sprite Sheet Konfiguration für alle Monster
+        const SPRITE_CONFIG = {
+            wald: { frameCount: 4, direction: 'horizontal', speed: 8 },
+            wasser: { frameCount: 4, direction: 'horizontal', speed: 8 },
+            feuer: { frameCount: 36, direction: 'grid', speed: 8 }, // 6x6 Grid
+            gift: { frameCount: 4, direction: 'horizontal', speed: 8 },
+            blitz: { frameCount: 4, direction: 'horizontal', speed: 8 },
+            gebirge: { frameCount: 4, direction: 'horizontal', speed: 8 },
+            leere: { frameCount: 4, direction: 'horizontal', speed: 8 }
+        };
 
         let game = null;
 
