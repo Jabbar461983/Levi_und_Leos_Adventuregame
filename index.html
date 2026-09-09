@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Levi & Leo's Adventure Game - Link's Quest</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: #000;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #2d5016;
+        }
+
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .ui-panel {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #ffd700;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .ui-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .ui-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #ffd700;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+
+        .ui-bottom {
+            text-align: center;
+        }
+
+        #menuContainer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            gap: 20px;
+        }
+
+        .menu-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px #000;
+            margin-bottom: 30px;
+        }
+
+        .menu-button {
+            width: 300px;
+            padding: 15px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border: 2px solid #ff8c00;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .menu-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+        }
+
+        .menu-button:active {
+            transform: scale(0.95);
+        }
+
+        #shopContainer {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 999;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .shop-title {
+            font-size: 32px;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .shop-item {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #ffd700;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .shop-item:hover {
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .shop-item-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .shop-item-price {
+            font-size: 16px;
+            color: #ffff00;
+            margin-bottom: 10px;
+        }
+
+        .shop-back {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-button {
+            padding: 10px 20px;
+            background: #ff6b6b;
+            border: 2px solid #ff8c00;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: #ff8c8c;
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes attack {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .attack-animation {
+            animation: attack 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <div id="menuContainer">
+            <div class="menu-title">Link's Quest</div>
+            <button class="menu-button" onclick="startGame()">Spiel Starten</button>
+            <button class="menu-button" onclick="openShop()">Skins Shop</button>
+            <div class="menu-title" style="font-size: 18px; color: #ff00ff; margin-top: 30px;">Levi & Leo's Adventure Game</div>
+        </div>
+
+        <div id="shopContainer">
+            <div class="shop-title">Skins Shop</div>
+            <div id="shopGrid" class="shop-grid"></div>
+            <div class="shop-back">
+                <button class="back-button" onclick="closeShop()">Zurück zum Menü</button>
+            </div>
+        </div>
+
+        <div id="ui" class="hidden">
+            <div class="ui-top">
+                <div class="ui-item">Level: <span id="levelDisplay">1</span></div>
+                <div class="ui-item">❤️ HP: <span id="hpDisplay">100</span></div>
+                <div class="ui-item">⚔️ <span id="weaponDisplay">Schwert</span></div>
+                <div class="ui-item">💎 <span id="diamondDisplay">0</span></div>
+            </div>
+            <div class="ui-bottom">
+                <div class="ui-item" id="bossWarning"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const TILE_SIZE = 40;
+
+        class Game {
+            constructor() {
+                this.width = canvas.width;
+                this.height = canvas.height;
+                this.currentLevel = 1;
+                this.currentSkin = 0;
+                this.diamonds = parseInt(localStorage.getItem('diamonds') || '0');
+                this.unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins') || '[true]');
+                this.gameState = 'menu';
+                this.frameCount = 0;
+                this.isPaused = false;
+
+                this.skins = [
+                    { name: 'Classic Link', cost: 0, color: '#00ff00', unlocked: true },
+                    { name: 'Red Link', cost: 50, color: '#ff0000', unlocked: false },
+                    { name: 'Blue Link', cost: 100, color: '#0088ff', unlocked: false },
+                    { name: 'Dark Link', cost: 150, color: '#1a1a1a', unlocked: false },
+                    { name: 'Gold Link', cost: 200, color: '#ffff00', unlocked: false },
+                    { name: 'Crystal Link', cost: 300, color: '#00ffff', unlocked: false },
+                ];
+
+                this.themes = [
+                    { name: 'Wald', color: '#2d5016', bossWeapon: 'Waldaxt', bgColor: '#1a3d0a' },
+                    { name: 'Wasser', color: '#1a5276', bossWeapon: 'Wassertrident', bgColor: '#0f2a3d' },
+                    { name: 'Feuer', color: '#7d1f1f', bossWeapon: 'Feuerschwert', bgColor: '#4d0e0e' },
+                    { name: 'Gift', color: '#4d2d5c', bossWeapon: 'Giftdolch', bgColor: '#2d1a3d' },
+                    { name: 'Blitz', color: '#5c5c1f', bossWeapon: 'Blitzstab', bgColor: '#3d3d0f' },
+                    { name: 'Gebirge', color: '#4d4d4d', bossWeapon: 'Felshammer', bgColor: '#2d2d2d' },
+                    { name: 'Leere', color: '#1a0033', bossWeapon: 'Void Klinge', bgColor: '#0d001a' },
+                ];
+
+                this.init();
+                this.updateShop();
+                this.loadProgress();
+            }
+
+            init() {
+                this.player = new Player(this.width / 2, this.height / 2, this.currentSkin);
+                this.enemies = [];
+                this.bullets = [];
+                this.particles = [];
+                this.diamonds_on_map = [];
+                this.boss = null;
+                this.currentWeapon = 'Schwert';
+                this.isBossLevel = this.currentLevel % 5 === 0;
+                this.levelStartTime = Date.now();
+
+                this.spawnEnemies();
+            }
+
+            spawnEnemies() {
+                const enemyCount = 3 + this.currentLevel;
+                for (let i = 0; i < enemyCount; i++) {
+                    let x, y;
+                    do {
+                        x = Math.random() * (this.width - 100) + 50;
+                        y = Math.random() * (this.height - 100) + 50;
+                    } while (Math.hypot(x - this.player.x, y - this.player.y) < 150);
+
+                    this.enemies.push(new Enemy(x, y, this.currentLevel));
+                }
+
+                if (this.isBossLevel) {
+                    const theme = this.themes[this.currentLevel - 1];
+                    const bossLevel = Math.ceil(this.currentLevel / 5);
+                    this.boss = new Boss(this.width / 2, 100, bossLevel, theme);
+                }
+
+                for (let i = 0; i < 5 + this.currentLevel; i++) {
+                    this.diamonds_on_map.push({
+                        x: Math.random() * this.width,
+                        y: Math.random() * this.height,
+                        collected: false
+                    });
+                }
+            }
+
+            update() {
+                if (this.gameState !== 'playing' || this.isPaused) return;
+
+                this.frameCount++;
+                this.player.update(this.width, this.height);
+
+                this.enemies = this.enemies.filter(e => {
+                    e.update(this.player, this.width, this.height);
+                    e.dx = (this.player.x - e.x) / 200;
+                    e.dy = (this.player.y - e.y) / 200;
+
+                    if (e.hp <= 0) {
+                        for (let i = 0; i < 10; i++) {
+                            this.particles.push(new Particle(e.x, e.y, e.color));
+                        }
+                        return false;
+                    }
+
+                    if (Math.hypot(this.player.x - e.x, this.player.y - e.y) < 30) {
+                        this.player.takeDamage(5);
+                    }
+
+                    return true;
+                });
+
+                if (this.boss) {
+                    this.boss.update(this.player, this.width, this.height);
+                    if (this.boss.hp <= 0) {
+                        this.boss = null;
+                        this.currentWeapon = this.themes[this.currentLevel - 1].bossWeapon;
+                        this.diamonds += 50;
+                        this.saveProgress();
+                    }
+
+                    if (Math.hypot(this.player.x - this.boss.x, this.player.y - this.boss.y) < 50) {
+                        this.player.takeDamage(10);
+                    }
+                }
+
+                this.particles = this.particles.filter(p => {
+                    p.update();
+                    return p.life > 0;
+                });
+
+                this.diamonds_on_map.forEach(d => {
+                    if (!d.collected && Math.hypot(this.player.x - d.x, this.player.y - d.y) < 20) {
+                        d.collected = true;
+                        this.diamonds++;
+                    }
+                });
+
+                if (this.player.hp <= 0) {
+                    this.gameState = 'gameover';
+                }
+
+                if (this.enemies.length === 0 && !this.boss) {
+                    if (this.currentLevel < 7) {
+                        this.currentLevel++;
+                        this.init();
+                    } else {
+                        this.gameState = 'won';
+                    }
+                }
+            }
+
+            draw() {
+                const theme = this.themes[this.currentLevel - 1];
+                ctx.fillStyle = theme.bgColor;
+                ctx.fillRect(0, 0, this.width, this.height);
+
+                this.player.draw(ctx, this.skins[this.currentSkin].color);
+
+                this.enemies.forEach(e => e.draw(ctx));
+                if (this.boss) this.boss.draw(ctx);
+
+                this.diamonds_on_map.forEach(d => {
+                    if (!d.collected) {
+                        ctx.fillStyle = '#00aaff';
+                        ctx.beginPath();
+                        ctx.arc(d.x, d.y, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                this.particles.forEach(p => p.draw(ctx));
+
+                this.drawUI();
+            }
+
+            drawUI() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(10, 10, 200, 80);
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(10, 10, 200, 80);
+
+                ctx.fillStyle = '#ffd700';
+                ctx.font = '14px Arial';
+                ctx.fillText(`Level: ${this.currentLevel}`, 20, 30);
+                ctx.fillText(`HP: ${this.player.hp}`, 20, 50);
+                ctx.fillText(`💎 ${this.diamonds}`, 20, 70);
+
+                if (this.isBossLevel && this.boss) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                    ctx.fillRect(this.width / 2 - 100, 10, 200, 20);
+                    ctx.fillStyle = '#ffff00';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('BOSS FIGHT!', this.width / 2, 24);
+                    ctx.textAlign = 'left';
+                }
+            }
+
+            updateShop() {
+                const shopGrid = document.getElementById('shopGrid');
+                shopGrid.innerHTML = '';
+                this.skins.forEach((skin, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'shop-item';
+                    item.innerHTML = `
+                        <div class="shop-item-name">${skin.name}</div>
+                        <div style="width: 40px; height: 40px; margin: 10px auto; background: ${skin.color}; border: 2px solid #ffd700; border-radius: 50%;"></div>
+                        <div class="shop-item-price">${skin.cost} 💎</div>
+                        <div>${skin.unlocked ? 'GEKAUFT' : 'KAUFEN'}</div>
+                    `;
+                    if (!skin.unlocked) {
+                        item.onclick = () => this.buySkin(index);
+                    }
+                    shopGrid.appendChild(item);
+                });
+            }
+
+            buySkin(index) {
+                if (this.diamonds >= this.skins[index].cost) {
+                    this.diamonds -= this.skins[index].cost;
+                    this.skins[index].unlocked = true;
+                    this.saveProgress();
+                    this.updateShop();
+                    alert('Skin gekauft!');
+                } else {
+                    alert('Nicht genug Diamanten!');
+                }
+            }
+
+            saveProgress() {
+                localStorage.setItem('diamonds', this.diamonds.toString());
+                localStorage.setItem('unlockedSkins', JSON.stringify(this.skins.map(s => s.unlocked)));
+            }
+
+            loadProgress() {
+                this.diamonds = parseInt(localStorage.getItem('diamonds') || '0');
+                const unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins') || '[true]');
+                unlockedSkins.forEach((unlocked, index) => {
+                    if (index < this.skins.length) {
+                        this.skins[index].unlocked = unlocked;
+                    }
+                });
+            }
+        }
+
+        class Player {
+            constructor(x, y, skinIndex) {
+                this.x = x;
+                this.y = y;
+                this.width = 20;
+                this.height = 20;
+                this.hp = 100;
+                this.maxHp = 100;
+                this.speed = 5;
+                this.dx = 0;
+                this.dy = 0;
+                this.angle = 0;
+                this.skinIndex = skinIndex;
+            }
+
+            update(width, height) {
+                const keys = {};
+                document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+                document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+                window.keys = keys;
+
+                this.dx = 0;
+                this.dy = 0;
+
+                if (window.keys['w'] || window.keys['arrowup']) this.dy = -this.speed;
+                if (window.keys['s'] || window.keys['arrowdown']) this.dy = this.speed;
+                if (window.keys['a'] || window.keys['arrowleft']) this.dx = -this.speed;
+                if (window.keys['d'] || window.keys['arrowright']) this.dx = this.speed;
+
+                this.x += this.dx;
+                this.y += this.dy;
+
+                this.x = Math.max(this.width / 2, Math.min(width - this.width / 2, this.x));
+                this.y = Math.max(this.height / 2, Math.min(height - this.height / 2, this.y));
+
+                if (window.mousePos) {
+                    this.angle = Math.atan2(window.mousePos.y - this.y, window.mousePos.x - this.x);
+                }
+            }
+
+            draw(ctx, color) {
+                ctx.fillStyle = color;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(this.width / 2 - 5, -2, 8, 4);
+
+                ctx.restore();
+
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - 15, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            takeDamage(amount) {
+                this.hp = Math.max(0, this.hp - amount);
+            }
+
+            heal(amount) {
+                this.hp = Math.min(this.maxHp, this.hp + amount);
+            }
+        }
+
+        class Enemy {
+            constructor(x, y, level) {
+                this.x = x;
+                this.y = y;
+                this.width = 16;
+                this.height = 16;
+                this.hp = 20 + level * 5;
+                this.maxHp = this.hp;
+                this.speed = 2 + level * 0.5;
+                this.dx = 0;
+                this.dy = 0;
+                this.color = `hsl(${Math.random() * 60 + 20}, 80%, 50%)`;
+                this.attackCooldown = 0;
+            }
+
+            update(player, width, height) {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                this.x = Math.max(0, Math.min(width, this.x));
+                this.y = Math.max(0, Math.min(height, this.y));
+
+                this.attackCooldown--;
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+
+                ctx.fillStyle = '#ff0000';
+                const healthWidth = (this.hp / this.maxHp) * this.width;
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2 - 8, healthWidth, 4);
+            }
+
+            takeDamage(amount) {
+                this.hp -= amount;
+            }
+        }
+
+        class Boss {
+            constructor(x, y, level, theme) {
+                this.x = x;
+                this.y = y;
+                this.level = level;
+                this.theme = theme;
+                this.size = 30 + level * 10;
+                this.hp = 300 + level * 100;
+                this.maxHp = this.hp;
+                this.speed = 1 + level * 0.3;
+                this.dx = 0;
+                this.dy = 0;
+                this.attackCooldown = 0;
+                this.angle = 0;
+                this.phaseChangeThreshold = this.maxHp / 3;
+            }
+
+            update(player, width, height) {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+
+                this.angle = Math.atan2(dy, dx);
+
+                if (dist > 100) {
+                    this.dx = (dx / dist) * this.speed;
+                    this.dy = (dy / dist) * this.speed;
+                } else {
+                    this.dx *= 0.95;
+                    this.dy *= 0.95;
+                }
+
+                this.x += this.dx;
+                this.y += this.dy;
+
+                this.x = Math.max(this.size, Math.min(width - this.size, this.x));
+                this.y = Math.max(this.size + 50, Math.min(height - this.size, this.y));
+
+                this.attackCooldown--;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                ctx.fillStyle = this.theme.color;
+                ctx.beginPath();
+                ctx.moveTo(this.size, 0);
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    ctx.lineTo(Math.cos(angle) * this.size, Math.sin(angle) * this.size);
+                }
+                ctx.fill();
+
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(this.size / 2, 0, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+
+                ctx.fillStyle = '#ff0000';
+                const healthWidth = (this.hp / this.maxHp) * (this.size * 2);
+                ctx.fillRect(this.x - healthWidth / 2, this.y - this.size - 15, healthWidth, 8);
+
+                ctx.strokeStyle = '#ffff00';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x - healthWidth / 2, this.y - this.size - 15, healthWidth, 8);
+            }
+
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp < 0) this.hp = 0;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8 - 2;
+                this.life = 30;
+                this.color = color;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2;
+                this.life--;
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life / 30;
+                ctx.fillRect(this.x - 2, this.y - 2, 4, 4);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        let game = null;
+
+        function startGame() {
+            document.getElementById('menuContainer').classList.add('hidden');
+            document.getElementById('ui').classList.remove('hidden');
+            game = new Game();
+            game.gameState = 'playing';
+            gameLoop();
+        }
+
+        function openShop() {
+            document.getElementById('menuContainer').classList.add('hidden');
+            document.getElementById('shopContainer').style.display = 'block';
+        }
+
+        function closeShop() {
+            document.getElementById('shopContainer').style.display = 'none';
+            document.getElementById('menuContainer').classList.remove('hidden');
+            if (game) {
+                game.saveProgress();
+            }
+        }
+
+        function gameLoop() {
+            if (!game || game.gameState === 'menu') return;
+
+            game.update();
+            game.draw();
+
+            updateUI();
+
+            if (game.gameState === 'playing') {
+                requestAnimationFrame(gameLoop);
+            } else if (game.gameState === 'gameover') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, game.width, game.height);
+                ctx.fillStyle = '#ff0000';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', game.width / 2, game.height / 2);
+                ctx.font = '24px Arial';
+                ctx.fillStyle = '#ffff00';
+                ctx.fillText(`Level erreicht: ${game.currentLevel}`, game.width / 2, game.height / 2 + 50);
+                ctx.fillText(`Diamanten: ${game.diamonds}`, game.width / 2, game.height / 2 + 100);
+
+                setTimeout(() => {
+                    game.saveProgress();
+                    document.getElementById('ui').classList.add('hidden');
+                    document.getElementById('menuContainer').classList.remove('hidden');
+                    game.gameState = 'menu';
+                }, 3000);
+            } else if (game.gameState === 'won') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, game.width, game.height);
+                ctx.fillStyle = '#00ff00';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('DU HAST GEWONNEN!', game.width / 2, game.height / 2);
+                ctx.font = '24px Arial';
+                ctx.fillStyle = '#ffff00';
+                ctx.fillText(`Gesamte Diamanten: ${game.diamonds}`, game.width / 2, game.height / 2 + 50);
+
+                setTimeout(() => {
+                    game.saveProgress();
+                    document.getElementById('ui').classList.add('hidden');
+                    document.getElementById('menuContainer').classList.remove('hidden');
+                    game.gameState = 'menu';
+                }, 3000);
+            }
+        }
+
+        function updateUI() {
+            if (!game) return;
+            document.getElementById('levelDisplay').textContent = game.currentLevel;
+            document.getElementById('hpDisplay').textContent = game.player.hp;
+            document.getElementById('weaponDisplay').textContent = game.currentWeapon;
+            document.getElementById('diamondDisplay').textContent = game.diamonds;
+        }
+
+        document.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            window.mousePos = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        });
+
+        document.addEventListener('click', e => {
+            if (!game || game.gameState !== 'playing') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const dist = Math.hypot(clickX - game.player.x, clickY - game.player.y);
+            const attackRange = 80;
+
+            if (dist < attackRange) {
+                const angle = Math.atan2(clickY - game.player.y, clickX - game.player.x);
+
+                game.enemies = game.enemies.filter(enemy => {
+                    const edist = Math.hypot(enemy.x - game.player.x, enemy.y - game.player.y);
+                    const angleDiff = Math.abs(angle - Math.atan2(enemy.y - game.player.y, enemy.x - game.player.x));
+
+                    if (edist < attackRange && angleDiff < Math.PI / 4) {
+                        enemy.takeDamage(25);
+                        for (let i = 0; i < 5; i++) {
+                            game.particles.push(new Particle(enemy.x, enemy.y, enemy.color));
+                        }
+                        return enemy.hp > 0;
+                    }
+                    return true;
+                });
+
+                if (game.boss && Math.hypot(game.boss.x - game.player.x, game.boss.y - game.player.y) < attackRange) {
+                    const bdist = Math.hypot(game.boss.x - game.player.x, game.boss.y - game.player.y);
+                    const bangle = Math.atan2(game.boss.y - game.player.y, game.boss.x - game.player.x);
+                    const angleDiff = Math.abs(angle - bangle);
+
+                    if (bdist < attackRange && angleDiff < Math.PI / 3) {
+                        game.boss.takeDamage(50);
+                        for (let i = 0; i < 10; i++) {
+                            game.particles.push(new Particle(game.boss.x, game.boss.y, game.boss.theme.color));
+                        }
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && game && game.gameState === 'playing') {
+                game.isPaused = !game.isPaused;
+            }
+        });
+
+        window.addEventListener('load', () => {
+            game = new Game();
+        });
+    </script>
+</body>
+</html>
